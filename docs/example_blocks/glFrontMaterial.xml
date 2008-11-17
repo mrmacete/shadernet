@@ -1,0 +1,15 @@
+<block name="glFrontMaterial">
+<code>
+	$outputs.emission = gl_FrontMaterial.emission;
+	$outputs.ambient = gl_FrontMaterial.ambient;
+	$outputs.diffuse = gl_FrontMaterial.diffuse;
+	$outputs.specular = gl_FrontMaterial.specular;
+	$outputs.shininess = gl_FrontMaterial.shininess;
+</code>
+<output name="emission" type="vec4" />
+<output name="ambient" type="vec4" />
+<output name="diffuse" type="vec4" />
+<output name="specular" type="vec4" />
+<output name="shininess" type="float" />
+
+</block>

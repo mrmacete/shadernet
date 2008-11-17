@@ -1,0 +1,10 @@
+<block name="StdOut" >
+<input name="color" type="vec4" />
+<input name="depth" type="vec4" />
+
+<code>
+	gl_FragColor = $i.color;
+	gl_FragDepth = $i.depth;
+</code>
+
+</block>

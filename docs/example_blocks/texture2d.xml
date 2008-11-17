@@ -1,0 +1,9 @@
+<block name="texture2d">
+<input name="texture" type="sampler2d" />
+<input name="uv" type="vec2" />
+<code>
+	$o = texture2d( $inputs.texture, $inputs.uv.uv );
+</code>
+
+<output name="rgba" type="vec4" />
+</block>

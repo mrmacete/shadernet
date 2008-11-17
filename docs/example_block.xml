@@ -1,0 +1,49 @@
+<block name="texture2D" >
+	<param type="string" name="textureName" />
+	<code>
+		uniform sampler2D $textureName;
+	</code>
+	<output type="sampler2D" name="$textureName" />
+</block>
+
+<block name="textureBlendGL" >
+	<param name="blendFunction" type="int" />
+	<param name="srcFactor" type="int" />
+	<param name="dstFactor" type="int" />
+
+	<input name="firstTexture" type="sampler2D" />
+	<input name="secondTexture" type="sampler2D" />
+	<input name="uv" type="vec2" />
+
+	<output name="blendedColor" type="vec4" />
+
+	<import block="glConstantsBlending" />
+	<code>
+		vec4 src;
+		vec4 dst;
+
+		src = texture2D( $inputs.firstTexture, $inputs.uv );
+		if ( $srcFactor == GL_ZERO )
+		{
+			src.rgb = vec3( 0.0, 0.0, 0.0 );
+		}
+		
+		dst = texture2D( $inputs.firstTexture, $inputs.uv );
+		if ( $dstFactor == GL_ZERO )
+		{
+			dst.rgb = vec3( 0.0, 0.0, 0.0 );
+		}
+		if ( $srcFactor == GL_SRC_ALPHA )
+		{
+			src.rgb = src.rgb * src.a;
+		}
+		if ( $srcFactor == GL_SRC_COLOR )
+		{
+			src.rgb  = src.rgb * src.rgb;
+		}
+
+		if ( $blendFunction == GL_MODULATE )
+		{
+			$outputs.blendColor = src * dst;				
+		}	
+</block>

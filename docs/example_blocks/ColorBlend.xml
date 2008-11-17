@@ -1,0 +1,19 @@
+<block name="ColorBlend" >
+<param name="function" >
+	<value literal="multiply" />
+	<value literal="add" />
+</param>
+<input name="colorA" type="vec4" />
+<input name="colorB" type="vec4" />
+
+<code>
+	#if ( $params.function == $params.function:multiply )
+		$o = $i.colorA * $i.colorB;
+	#elif ( $params.function == $params.function:add )
+		$o = $i.colorA + $i.colorB;
+	#endif
+</code>
+
+<output name="colorOutput" type="vec4" />
+
+</block>

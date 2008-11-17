@@ -1,0 +1,9 @@
+<block name="glTexCoord" >
+<param name="channel" />
+
+<code>
+	$o = glTexCoord[channel];
+</code>
+
+<output name="coord" type="vec4" />
+</block>

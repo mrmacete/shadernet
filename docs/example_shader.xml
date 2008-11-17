@@ -1,0 +1,47 @@
+<shader name="MultiBlend">
+	<url base="file:///home/macete/cprojects/shader_net/docs/example_blocks/" />
+
+	<import block="glTexCoord" as="texCoord0">
+		<param name="channel" value="0" />
+	</import>
+	<import block="texture2d" as="diffuseTexture" >
+		<param name="textureName" value="diffuseMap" />
+	</import>
+	<import block="texture2d" as="occlusionTexture" >
+		<param name="textureName" value="occlusionMap" />
+	</import>
+	<import block="glFrontMaterial" />
+	<import block="ColorBlend" as="ColorBlend1" >
+		<param name="function" value="multiply" />
+	</import>
+	<import block="ColorBlend" as="ColorBlend2" />
+		<param name="function" value="multiply" />
+	</import>
+	<import block="StdOut" />
+
+	<output block="texCoord0" pin="coord" >
+		<input block="diffuseTexture" pin="uv" />
+		<input block="occlusionTexture" pin="uv" />		
+	</output>
+
+	<output block="diffuseTexture" pin="rgba" >
+		<input block="ColorBlend1" pin="colorA" />	
+	</output>
+
+	<output block="frontMaterial" pin="diffuse" >
+		<input block="ColorBlend1" pin="colorB" />
+	</output>
+
+	<output block="ColorBlend1" pin="colorOutput" >
+		<input block="ColorBlend2" pin="colorA" />
+	</output>
+
+	<output block="occlusionTexture" pin="rgba" >
+		<input block="ColorBlend2" pin="colorB" />
+	</output>
+
+	<output block="ColorBlend2" pin="colorOutput" >
+		<input block="StdOut" pin="color" />
+	</output>
+
+</shader>
