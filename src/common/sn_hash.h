@@ -7,7 +7,6 @@
 typedef struct _hash_element
 {
 	void * data;
-	/*char key[ NAME_LENGTH ];*/
 	unsigned long int k;
 	set * overflow;
 
