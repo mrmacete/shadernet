@@ -26,11 +26,12 @@
 #define BLOCK_NET_H
 
 #include <set.h>
+#include <sn_hash.h>
 #include <parsed_building_block.h>
 
 typedef struct _block_net
 {
-	set * parsed_blocks; /* hash will be better */
+	hash * parsed_blocks;
 	set * inputs;
 	parsed_building_block * root;
 

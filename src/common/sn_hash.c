@@ -33,7 +33,7 @@
 const char * _module_name = "SN_HASH";
 static hash_element * 	recurse_get( hash_element * head, unsigned long int hf );
 static hash_element * 	hash_element_create( unsigned long int hf, void * data );
-static void		hash_element_free( hash_element ** pp_el );
+static void		hash_element_free( hash_element ** pp_el, void (*data_deleter)(void**) );
 
 hash *                  
 hash_create( unsigned long int vector_size )
@@ -41,6 +41,7 @@ hash_create( unsigned long int vector_size )
 	hash * new_hash = (hash*) malloc( sizeof( hash ) );
 	new_hash->size =0 ;
 	new_hash->vector_size = vector_size;
+	new_hash->data_deleter = NULL;
 
 	if ( vector_size )
 	{
@@ -64,7 +65,7 @@ hash_free( hash ** pp_hash )
 		for ( i=0; i<(*pp_hash)->vector_size; i++ )
 		{
 			if ( (*pp_hash)->vector[i] )
-				hash_element_free( &(*pp_hash)->vector[i] );
+				hash_element_free( &(*pp_hash)->vector[i], (*pp_hash)->data_deleter );
 		}
 
 		sn_free( (void**) &(*pp_hash)->vector );
@@ -176,7 +177,7 @@ hash_remove( hash* p_hash, const char * key )
 	{
 		if ( p_hash->vector[k]->k == hf )
 		{
-			hash_element_free( &p_hash->vector[k] );
+			hash_element_free( &p_hash->vector[k], p_hash->data_deleter );
 			p_hash->size--;
 		}
 		else
@@ -187,7 +188,7 @@ hash_remove( hash* p_hash, const char * key )
 				hash_element * hel = (hash_element*) el->data;
 				if ( hel->k == hf )
 				{
-					hash_element_free( (hash_element**) &el->data );
+					hash_element_free( (hash_element**) &el->data, p_hash->data_deleter );
 					if ( el->prev != NULL )
 						el->prev->next = el->next;
 					else
@@ -216,18 +217,22 @@ hash_element_create( unsigned long int hf, void * data )
 }
 
 void		
-hash_element_free( hash_element ** pp_el )
+hash_element_free( hash_element ** pp_el , void (*data_deleter)(void**) )
 {
 	if ( pp_el && *pp_el )
 	{
 		(*pp_el)->k = 0;
-		(*pp_el)->data = 0; /* don't actually delete data */
+		if ( data_deleter != NULL )
+			data_deleter( &(*pp_el)->data ); 
+
+		(*pp_el)->data = 0;
+
 		if ( (*pp_el)->overflow )
 		{
 			while( (*pp_el)->overflow->size )
 			{
 				set_element *sel = set_pop_element( (*pp_el)->overflow );
-				hash_element_free( (hash_element**) &sel->data );
+				hash_element_free( (hash_element**) &sel->data, data_deleter );
 				sn_free( (void**) &sel );
 			}
 		}
@@ -236,8 +241,3 @@ hash_element_free( hash_element ** pp_el )
 	}
 }
 
-void                    
-hash_clear( hash* p_hash )
-{
-
-}

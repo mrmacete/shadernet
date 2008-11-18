@@ -35,10 +35,10 @@
 
 static const char* _module_name = "BLOCK_NET";
 
-static void free_parsed_blocks( set * parsed_blocks );
 static void generate_code( code_chunk* code, parsed_building_block * root );
 static void generate_uniforms( code_chunk * code, block_net * net );
 static void generate_header( code_chunk * code, block_net * net );
+static void parsed_building_block_deleter( void ** data );
 
 block_net *
 block_net_create( const char * name )
@@ -48,26 +48,18 @@ block_net_create( const char * name )
 	if ( name != NULL )
 		strncpy( new_block_net->name, name, NAME_LENGTH );
 
-	new_block_net->parsed_blocks = set_create();
+	new_block_net->parsed_blocks = hash_create( 50 );
+	new_block_net->parsed_blocks->data_deleter = &parsed_building_block_deleter;
 	new_block_net->inputs = set_create();
 	new_block_net->root = NULL;
 
 	return new_block_net;
 }
 
-void 
-free_parsed_blocks( set * parsed_blocks )
+void
+parsed_building_block_deleter( void ** data )
 {
-	if ( parsed_blocks != NULL )
-	{
-		set_element * el = parsed_blocks->head;
-		while( el != NULL )
-		{
-			parsed_building_block_free( (parsed_building_block**) &el->data );
-			el = el->next;
-		}
-
-	}
+	parsed_building_block_free( (parsed_building_block**) data );
 }
 
 void
@@ -76,8 +68,7 @@ block_net_free( block_net ** pp_block_net )
 	if ( pp_block_net != NULL && (*pp_block_net) != NULL )
 	{
 		(*pp_block_net)->root = NULL;
-		free_parsed_blocks( (*pp_block_net)->parsed_blocks );
-		set_soft_free( &(*pp_block_net)->parsed_blocks );
+		hash_free( &(*pp_block_net)->parsed_blocks );
 		set_soft_free( &(*pp_block_net)->inputs );
 		sn_free( (void**) &(*pp_block_net)->name );
 		sn_free( (void**) pp_block_net );
@@ -89,13 +80,13 @@ block_net_add_parsed_block( block_net * net, parsed_building_block * block )
 {
 	if ( net == NULL )
 	{
-		LOG_DEBUG( _module_name, "cannot add blocks to a NULL neti\n" );
+		LOG_DEBUG( _module_name, "cannot add blocks to a NULL net\n" );
 		return;
 	}
 
 	if ( block != NULL )
 	{
-		set_push_element( net->parsed_blocks, (void*) block );
+		hash_put( net->parsed_blocks, block->name, (void*) block );
 	}
 		
 }
@@ -105,15 +96,9 @@ block_net_get_parsed_block( block_net * net, const char * name )
 {
 	if ( net && name && net->parsed_blocks )
 	{
-		set_element * el = net->parsed_blocks->head;
-                while( el != NULL )
-                {
-                        parsed_building_block * pblock = (parsed_building_block*) el->data ;
-			if ( pblock->name && strncmp( pblock->name, name, NAME_LENGTH )==0 )
-				return pblock;
-                        el = el->next;
-                }
-
+		hash_element * result = hash_get( net->parsed_blocks, name );
+		if ( result )
+			return result->data;
 	}
 
 	return NULL;

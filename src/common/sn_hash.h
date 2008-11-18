@@ -41,6 +41,7 @@ typedef struct _hash
 	hash_element ** vector;
 	unsigned long int vector_size;
 	unsigned long int size;
+	void (*data_deleter)( void ** );
 } hash;
 
 hash * 			hash_create( unsigned long int vector_size );
@@ -51,6 +52,5 @@ unsigned long int 	hash_function( const char * key );
 hash_element * 		hash_get( hash* p_hash, const char * key );
 void			hash_put( hash* p_hash, const char * key, void * data );
 void			hash_remove( hash* p_hash, const char * key );
-void			hash_clear( hash* p_hash ); 
 
 #endif
