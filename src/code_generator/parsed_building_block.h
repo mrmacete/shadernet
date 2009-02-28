@@ -28,16 +28,19 @@
 #include <building_block.h>
 #include "bookmark_set.h"
 
+struct _sn_string;
+
 typedef struct _parsed_building_block
 {
 	building_block * p_block;
 	bookmark_set * bookmarks;
 	int undefined_references;
 	int invalid_types;	
-	char * name;
+	struct _sn_string * name;
 } parsed_building_block;
 
 parsed_building_block*	parsed_building_block_create( building_block * p_block, const char * name );
 void			parsed_building_block_free( parsed_building_block ** pp_parsed_building_block );
+void			parsed_building_block_replace( parsed_building_block * pblock, parsing_bookmark * bookmark, code_chunk * new_code );
 
 #endif

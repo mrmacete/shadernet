@@ -29,6 +29,7 @@
 #include <log.h>
 #include <sn_memory.h>
 #include <sn_config.h>
+#include <sn_string.h>
 
 #include "parsed_building_block.h"
 
@@ -52,12 +53,7 @@ parsed_building_block_create( building_block * p_block, const char * name )
 	new_pblock->undefined_references = 0;
 	new_pblock->invalid_types = 0;
 
-	new_pblock->name = (char*) malloc( sizeof( char ) * NAME_LENGTH );
-	*new_pblock->name = 0;
-	if ( name != NULL )
-	{
-		strncpy( new_pblock->name, name, NAME_LENGTH );
-	}
+	new_pblock->name = sn_string_create( name );
 
 	p_block->p_parsed = new_pblock;
 	
@@ -77,7 +73,7 @@ parsed_building_block_free( parsed_building_block ** pp_parsed_building_block )
 	{
 		building_block_free( &(*pp_parsed_building_block)->p_block );
 		bookmark_set_free( &(*pp_parsed_building_block)->bookmarks );
-		sn_free( (void**) &(*pp_parsed_building_block)->name );
+		sn_string_free( &(*pp_parsed_building_block)->name );
 		sn_free( (void**) pp_parsed_building_block );
 	}
 }
@@ -262,4 +258,15 @@ associate_bookmark( parsing_bookmark * p_bookmark, building_block * p_block )
 	}
 
 	return 0;
+}
+
+void
+parsed_building_block_replace( parsed_building_block * pblock, parsing_bookmark * bookmark, code_chunk * new_code )
+{
+	if ( pblock != NULL && bookmark != NULL && new_code != NULL )
+	{
+		char * start = code_chunk_replace( pblock->p_block->code, bookmark->p_start, bookmark->length, new_code );
+		bookmark->p_start = start;
+		bookmark->length = new_code->used_size;
+	}
 }

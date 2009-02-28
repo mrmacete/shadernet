@@ -25,23 +25,32 @@
 #include "sn_hash.h"
 #include "log.h"
 #include "sn_memory.h"
+#include "sn_string.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-const char * _module_name = "SN_HASH";
+/* static const char * _module_name = "SN_HASH"; */
 static hash_element * 	recurse_get( hash_element * head, unsigned long int hf );
 static hash_element * 	hash_element_create( unsigned long int hf, void * data );
 static void		hash_element_free( hash_element ** pp_el, void (*data_deleter)(void**) );
 
 hash *                  
-hash_create( unsigned long int vector_size )
+hash_create( unsigned long int vector_size , hash_key_type key_type)
 {
 	hash * new_hash = (hash*) malloc( sizeof( hash ) );
 	new_hash->size =0 ;
 	new_hash->vector_size = vector_size;
 	new_hash->data_deleter = NULL;
+	if ( key_type == HASH_KEY_STRING )
+		new_hash->hash_function = &hash_function_string;
+	else if ( key_type == HASH_KEY_INTEGER )
+		new_hash->hash_function = &hash_function_int;
+	else if ( key_type == HASH_KEY_CUSTOM )
+		new_hash->hash_function = NULL;
+
+	
 
 	if ( vector_size )
 	{
@@ -74,11 +83,12 @@ hash_free( hash ** pp_hash )
 }
 
 unsigned long int       
-hash_function( const char * key )
+hash_function_string( void * key_in )
 {
+	sn_string * key = (sn_string*) key_in;
 	if ( key )
 	{
-		register unsigned short int l = strlen( key );
+		register unsigned short int l = key->len;
 		register unsigned short int  i=0;
 		register unsigned long int accum = 0;
 		register unsigned short int r = l-i;
@@ -94,7 +104,7 @@ hash_function( const char * key )
 			
 			while( r > 0 )
 			{
-				c += key[ i + r - 1] << ( 8 * shift++ );
+				c += key->buffer[ i + r - 1] << ( 8 * shift++ );
 				r--;
 			}	
 			
@@ -107,10 +117,23 @@ hash_function( const char * key )
 	return 0;
 }
 
-hash_element *          
-hash_get( hash* p_hash, const char * key )
+unsigned long int
+hash_function_int( void * key_in )
 {
-	unsigned long int hf = hash_function( key );
+	int * key = (int*) key_in;
+
+	if ( key != NULL )
+	{
+		return  *((unsigned long int*) key);
+	}
+
+	return 0;
+}
+
+hash_element *          
+hash_get( hash* p_hash, void * key )
+{
+	unsigned long int hf = p_hash->hash_function( key );
 	unsigned long int k = hf % p_hash->vector_size;
 	if ( p_hash->vector[k] == NULL )
 		return NULL;
@@ -146,9 +169,9 @@ recurse_get( hash_element * head, unsigned long int hf )
 }
 
 void                    
-hash_put( hash* p_hash, const char * key, void * data )
+hash_put( hash* p_hash, void * key, void * data )
 {
-	unsigned long int hf = hash_function( key );
+	unsigned long int hf = p_hash->hash_function( key );
 	unsigned long int k = hf % p_hash->vector_size;
 	if ( p_hash->vector[k] == NULL )
 	{
@@ -168,10 +191,10 @@ hash_put( hash* p_hash, const char * key, void * data )
 }
 
 void                    
-hash_remove( hash* p_hash, const char * key )
+hash_remove( hash* p_hash, void * key )
 {
 	
-	unsigned long int hf = hash_function( key );
+	unsigned long int hf = p_hash->hash_function( key );
 	unsigned long int k = hf % p_hash->vector_size;
 	if ( p_hash->vector[k] != NULL )
 	{

@@ -26,10 +26,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include <sn_memory.h>
 #include <log.h>
 #include <sn_config.h>
+#include <sn_string.h>
 
 #include "code_chunk.h"
 
@@ -39,6 +41,7 @@ static void generate_code( code_chunk* code, parsed_building_block * root );
 static void generate_uniforms( code_chunk * code, block_net * net );
 static void generate_header( code_chunk * code, block_net * net );
 static void parsed_building_block_deleter( void ** data );
+static void replace_input_names( parsed_building_block *pblock );
 
 block_net *
 block_net_create( const char * name )
@@ -48,7 +51,7 @@ block_net_create( const char * name )
 	if ( name != NULL )
 		strncpy( new_block_net->name, name, NAME_LENGTH );
 
-	new_block_net->parsed_blocks = hash_create( 50 );
+	new_block_net->parsed_blocks = hash_create( 50 , HASH_KEY_STRING );
 	new_block_net->parsed_blocks->data_deleter = &parsed_building_block_deleter;
 	new_block_net->inputs = set_create();
 	new_block_net->root = NULL;
@@ -96,7 +99,9 @@ block_net_get_parsed_block( block_net * net, const char * name )
 {
 	if ( net && name && net->parsed_blocks )
 	{
-		hash_element * result = hash_get( net->parsed_blocks, name );
+		sn_string * name_string = sn_string_create( name );
+		hash_element * result = hash_get( net->parsed_blocks, (void*) name_string );
+		sn_string_free( &name_string );
 		if ( result )
 			return result->data;
 	}
@@ -185,7 +190,26 @@ generate_code( code_chunk* code, parsed_building_block * root )
 {
 	if ( root )
 	{
+		block_pin_set *ps = root->p_block->inputs;
+		set_element * el = ps->pin_set.head;
+                while( el != NULL )
+                {
+                        block_pin * pin = (block_pin*) el->data;
+                        if ( pin->source != NULL )
+                        {
+                                if ( pin->source->p_parent )
+                                {
+                                        if ( pin->source->p_parent->p_parent )
+                                                generate_code( code, pin->source->p_parent->p_parent->p_parsed );
+                                }
+                        }
+                        el = el->next;
+                }
 
+		replace_input_names( root );
+		code_chunk_merge( code, root->p_block->code );		
+
+		
 	}
 }
 
@@ -199,13 +223,14 @@ generate_uniforms( code_chunk * code, block_net * net )
 		while( el != NULL )
 		{
 			char * str = 0;
+			sn_string * string;
 			code_chunk_add_code( code, "uniform ", 8 );
 			str = glsl_type_to_string( ((block_pin*) el->data)->type );
 			code_chunk_add_code( code, str, strlen( str ) );
 			sn_free( (void**) &str );
 			code_chunk_add_code( code, " ", 1 );
-			str =((block_pin*) el->data)->p_parent->p_parent->p_parsed->name;
-			code_chunk_add_code( code, str, strlen(str) );
+			string =((block_pin*) el->data)->p_parent->p_parent->p_parsed->name;
+			code_chunk_add_string( code, string );
 			code_chunk_add_code( code, "_", 1);
 			code_chunk_add_code( code, ((block_pin*) el->data)->name, strlen(((block_pin*) el->data)->name) );
 			code_chunk_add_code( code, ";", 1 );
@@ -229,4 +254,50 @@ generate_header( code_chunk * code, block_net * net )
 		code_chunk_add_code( code, "\n", 1 );
 		code_chunk_add_code( code, " */\n", 4 );
 	}
+}
+
+code_chunk *
+get_pin_name( block_pin * p_pin )
+{
+	if ( p_pin != NULL )
+	{
+		code_chunk * pin_name = 
+			code_chunk_create_from_buffer( 
+				p_pin->p_parent->p_parent->p_parsed->name->buffer,
+				p_pin->p_parent->p_parent->p_parsed->name->len 
+			);
+
+		code_chunk_add_code( pin_name, "_", 1 );
+		code_chunk_add_code( pin_name, p_pin->name, strlen( p_pin->name ) );
+
+		return pin_name;
+	}				
+	
+	return code_chunk_create_empty();
+}
+
+void 
+replace_input_names( parsed_building_block *pblock )
+{
+	if ( pblock != NULL && pblock->bookmarks)
+	{
+		set_element * el = pblock->bookmarks->_set.head;
+		while ( el != NULL )
+		{
+			parsing_bookmark * bm = (parsing_bookmark*) el->data;
+			assert( bm != NULL );
+			if ( bm != NULL && bm->type == BOOKMARK_PIN )
+			{
+				if ( bm->p_couple->type[0] == 'i' )
+				{
+					code_chunk * input_name = get_pin_name( bm->u_association.p_pin );
+					parsed_building_block_replace( pblock, bm, input_name );
+					code_chunk_free( &input_name );
+				}
+			}
+			el = el->next;
+		}
+	}
+	
+
 }

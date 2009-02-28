@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include <sn_memory.h>
+#include <sn_string.h>
 #include <log.h>
 #include <set.h>
 
@@ -206,6 +207,104 @@ code_chunk_split( code_chunk *p_src, int from_line )
 
 }
 
+code_chunk *
+code_chunk_split_left( code_chunk *p_src, int length )
+{
+        code_chunk * new_code_chunk = NULL;
+
+        if ( p_src == NULL )
+        {
+                LOG_DEBUG( _module_name, "cannot split NULL\n" );
+                return NULL;
+        }
+
+        if ( length >= p_src->used_size )
+        {
+                LOG_ERROR( _module_name, "cannot split beyond end of text\n" );
+                return NULL;
+        }
+
+        new_code_chunk = code_chunk_create_from_buffer( p_src->buffer, length );
+	code_chunk_delete_bytes( p_src, 0, length );
+
+        return new_code_chunk;
+
+}
+
+code_chunk *
+code_chunk_split_right( code_chunk *p_src, int first )
+{
+        code_chunk * new_code_chunk = NULL;
+
+        if ( p_src == NULL )
+        {
+                LOG_DEBUG( _module_name, "cannot split NULL\n" );
+                return NULL;
+        }
+
+        if ( first >= p_src->used_size )
+        {
+                LOG_ERROR( _module_name, "cannot split beyond end of text\n" );
+                return NULL;
+        }
+
+        new_code_chunk = code_chunk_create_from_buffer( p_src->buffer + first, p_src->used_size - first );
+        code_chunk_delete_bytes( p_src, first, p_src->used_size - first );
+
+        return new_code_chunk;
+
+}
+
+
+void            
+code_chunk_delete_bytes( code_chunk * p_chunk, unsigned int first, unsigned int how_many )
+{
+        int bytes_to_copy;
+        int transfer_size;
+        char * start = NULL;
+        char * end = NULL;
+
+	if ( p_chunk != NULL )
+		return;
+
+	if ( first + how_many > p_chunk->used_size )
+	{
+		LOG_ERROR( _module_name, "cannot delete bytes beyond end of text\n" );
+	        return;
+	}
+
+	bytes_to_copy = p_chunk->used_size - first - how_many;
+        transfer_size = how_many;
+        start = p_chunk->buffer + first + how_many;
+        end = start + transfer_size;
+
+        /* copy a group at a time, to avoid memcpy overlapping */
+        while ( bytes_to_copy )
+        {
+                if ( bytes_to_copy < how_many )
+                        transfer_size = bytes_to_copy;
+                memcpy( start, end, transfer_size );
+                bytes_to_copy -= transfer_size;
+                start += transfer_size;
+                end += transfer_size;
+        }
+
+        p_chunk->last_line = NULL;
+        p_chunk->n_lines = 0;
+
+        p_chunk->used_size -= how_many ;
+        *(p_chunk->buffer + p_chunk->used_size) = 0;
+
+        code_chunk_update_lines( p_chunk );
+}
+
+void            
+code_chunk_add_string( code_chunk * p_code_chunk, struct _sn_string * p_string )
+{
+	if ( p_string != NULL )
+		code_chunk_add_code( p_code_chunk, p_string->buffer, p_string->len );
+}
+
 void            
 code_chunk_add_code( code_chunk * p_code_chunk, const char * code, int code_size )
 {
@@ -236,7 +335,6 @@ code_chunk_add_code( code_chunk * p_code_chunk, const char * code, int code_size
 	}
 
 	memcpy( p_code_chunk->buffer + p_code_chunk->used_size, code, code_size );
-	printf( "buffer: %d, used: %d, incoming: %d\n", p_code_chunk->buffer_size, p_code_chunk->used_size, code_size );
 	p_code_chunk->used_size += code_size;	
 
 	code_chunk_update_lines( p_code_chunk );
@@ -424,4 +522,29 @@ code_chunk_print( code_chunk * p_code_chunk, int flags )
 	}
 
 	
+}
+
+char*
+code_chunk_replace( code_chunk *p_dst, char * start_byte, int length, code_chunk * new_code )
+{
+	if ( p_dst != NULL && start_byte != NULL && new_code != NULL )
+	{
+		if ( start_byte >= p_dst->buffer && start_byte < (p_dst->buffer + p_dst->used_size) )
+		{
+			char * start_of_new_code = NULL;
+			code_chunk * before = code_chunk_split_left( p_dst, start_byte - p_dst->buffer );
+			code_chunk * after = code_chunk_split_right( p_dst, length );
+			code_chunk_delete_lines( p_dst, 0, p_dst->n_lines );
+			code_chunk_merge( p_dst, before );
+			start_of_new_code = p_dst->buffer + before->used_size;
+			code_chunk_merge( p_dst, new_code );
+			code_chunk_merge( p_dst, after );
+			code_chunk_free( &before );
+			code_chunk_free( &after );
+			return start_of_new_code;
+		}
+
+	}
+
+	return NULL;
 }

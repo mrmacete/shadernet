@@ -42,15 +42,19 @@ typedef struct _hash
 	unsigned long int vector_size;
 	unsigned long int size;
 	void (*data_deleter)( void ** );
+	unsigned long int (*hash_function)(void * data);
 } hash;
 
-hash * 			hash_create( unsigned long int vector_size );
+typedef enum hash_key_type { HASH_KEY_STRING, HASH_KEY_INTEGER, HASH_KEY_CUSTOM } hash_key_type;
+
+hash * 			hash_create( unsigned long int vector_size, hash_key_type key_type );
 void			hash_free( hash** pp_hash );
 
-unsigned long int 	hash_function( const char * key );
+unsigned long int 	hash_function_string( void * key );
+unsigned long int 	hash_function_int( void * key );
 
-hash_element * 		hash_get( hash* p_hash, const char * key );
-void			hash_put( hash* p_hash, const char * key, void * data );
-void			hash_remove( hash* p_hash, const char * key );
+hash_element * 		hash_get( hash* p_hash, void * key );
+void			hash_put( hash* p_hash, void * key, void * data );
+void			hash_remove( hash* p_hash, void * key );
 
 #endif
