@@ -66,7 +66,7 @@ code_chunk_create_from_buffer( const char * buffer, int length )
 	if ( buffer != NULL  && length > 0 )
 	{
 		new_code_chunk->buffer = (char*) malloc( (length+1) * sizeof(char) );
-		memcpy( new_code_chunk->buffer, buffer, length+1 );
+		memcpy( new_code_chunk->buffer, buffer, length );
 		*(new_code_chunk->buffer + length) = 0;
 		new_code_chunk->buffer_size = length;
 		new_code_chunk->used_size = length;
@@ -264,7 +264,7 @@ code_chunk_delete_bytes( code_chunk * p_chunk, unsigned int first, unsigned int 
         char * start = NULL;
         char * end = NULL;
 
-	if ( p_chunk != NULL )
+	if ( p_chunk == NULL )
 		return;
 
 	if ( first + how_many > p_chunk->used_size )
@@ -275,7 +275,7 @@ code_chunk_delete_bytes( code_chunk * p_chunk, unsigned int first, unsigned int 
 
 	bytes_to_copy = p_chunk->used_size - first - how_many;
         transfer_size = how_many;
-        start = p_chunk->buffer + first + how_many;
+        start = p_chunk->buffer + first;
         end = start + transfer_size;
 
         /* copy a group at a time, to avoid memcpy overlapping */
