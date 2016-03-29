@@ -30,9 +30,9 @@
 
 #include "parsing_bookmark.h"
 
-static const char _module_name[] = "PARSING_BOOKMARK";
+/*static const char _module_name[] = "PARSING_BOOKMARK";*/
 
-parsing_bookmark*       
+parsing_bookmark*
 parsing_bookmark_create( char * p_start, int length, parsed_couple *p_couple )
 {
 	parsing_bookmark * new_bookmark = (parsing_bookmark*) malloc( sizeof(parsing_bookmark) );
@@ -44,7 +44,7 @@ parsing_bookmark_create( char * p_start, int length, parsed_couple *p_couple )
 	return new_bookmark;
 }
 
-void                    
+void
 parsing_bookmark_free( parsing_bookmark ** pp_parsing_bookmark )
 {
 	if ( pp_parsing_bookmark != NULL && (*pp_parsing_bookmark) != NULL )
@@ -54,13 +54,13 @@ parsing_bookmark_free( parsing_bookmark ** pp_parsing_bookmark )
 	}
 }
 
-void                    
+void
 parsing_bookmark_print( parsing_bookmark * p_parsing_bookmark )
 {
 	if ( p_parsing_bookmark != NULL )
 	{
-		printf("[PBM] at %p, len %d, ", p_parsing_bookmark->p_start, p_parsing_bookmark->length );
-		printf("%s, ", (p_parsing_bookmark->type!=BOOKMARK_INVALID)?"associated":"unassociated" ); 
+		printf("[PBM] at %p, len %d, ", (void*)p_parsing_bookmark->p_start, p_parsing_bookmark->length );
+		printf("%s, ", (p_parsing_bookmark->type!=BOOKMARK_INVALID)?"associated":"unassociated" );
 		parsed_couple_print( p_parsing_bookmark->p_couple );
 	}
 }

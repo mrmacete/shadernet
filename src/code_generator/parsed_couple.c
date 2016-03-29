@@ -31,9 +31,9 @@
 
 #include "parsed_couple.h"
 
-static const char _module_name[] = "PARSED_COUPLE";
+/*static const char _module_name[] = "PARSED_COUPLE";*/
 
-parsed_couple *         
+parsed_couple *
 parsed_couple_create(const char* token)
 {
 	parsed_couple * new_parsed_couple = (parsed_couple*) malloc( sizeof(parsed_couple) );
@@ -41,13 +41,13 @@ parsed_couple_create(const char* token)
 	return new_parsed_couple;
 }
 
-void                    
+void
 parsed_couple_free( parsed_couple ** pp_parsed_couple )
 {
 	sn_free( (void**) pp_parsed_couple );
 }
 
-void                    
+void
 parsed_couple_parse( parsed_couple * p_couple, const char* token)
 {
 	char *point = NULL;
@@ -64,7 +64,7 @@ parsed_couple_parse( parsed_couple * p_couple, const char* token)
 		if ( point-token+1<sizeof(p_couple->type))
 		{
 			strncpy( p_couple->type, token, point - token );
-			p_couple->type[ point - token ] = 0;	
+			p_couple->type[ point - token ] = 0;
 		}
 		if (( colon = strchr( point+1, ':')) != NULL )
 		{
@@ -88,7 +88,7 @@ parsed_couple_parse( parsed_couple * p_couple, const char* token)
 			if ( other_point != NULL && other_point-point-1<how_much)
 				how_much = other_point-point-1;
 
-			strncpy( p_couple->instance, point + 1, how_much ); 		
+			strncpy( p_couple->instance, point + 1, how_much );
 			if ( how_much < sizeof( p_couple->instance)  )
 				p_couple->instance[ how_much ] = 0;
 			p_couple->literal[0] = 0;
@@ -96,15 +96,15 @@ parsed_couple_parse( parsed_couple * p_couple, const char* token)
 	}
 	else
 	{
-		
+
 		strncpy( p_couple->type, token, sizeof( p_couple->type ) );
-		p_couple->instance[0] = 0; 		
+		p_couple->instance[0] = 0;
 		p_couple->literal[0] = 0;
 	}
 
 }
 
-void                    
+void
 parsed_couple_print( parsed_couple * p_couple )
 {
 	if ( p_couple != NULL )
